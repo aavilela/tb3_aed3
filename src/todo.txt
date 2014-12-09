@@ -1,0 +1,6 @@
+- O sistema terá no maxímo 30 registros ( 10 blocos com 3 registros cada)
+
+- Abre os arquivos
+- Se os arquivos nas existirem 
+	- Inicializa todos os RRN dos registros com -1 em ambos arquivos de índices
+- Espera comando do usuário
