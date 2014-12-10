@@ -6,7 +6,7 @@
  * 	   William Odair Lima
  * Turma: 10A
  * 
- * Trabalho Prático: Sistema de manipulação de cadastros de alunos, indexado por uma Tabela Hash
+ * Trabalho Prático: Sistema de manipulação de cadastros de alunos, indexado por Tabela Hash
  *
  * Compilador: GCC
  * IDE: Nenhuma

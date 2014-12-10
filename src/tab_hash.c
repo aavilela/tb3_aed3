@@ -6,7 +6,7 @@
  * 	   William Odair Lima
  * Turma: 10A
  * 
- * Trabalho Prático: Sistema de manipulação de cadastros de alunos, indexado por árvore-B
+ * Trabalho Prático: Sistema de manipulação de cadastros de alunos, indexado por Tabela Hash
  *
  * Compilador: GCC
  * IDE: Nenhuma
@@ -33,14 +33,12 @@ void EscreveBloco(FILE *arq, Bloco *B, int RRN_bloco)
 void EscreveTab(FILE *arq, Bloco *tab)
 {
 	int i;
-	//for(i = 0; i < NUM_INICIAL_BLOCOS; i++)
-	//{
-		fseek(arq, OFFSET_INDICE , SEEK_SET);
-		fwrite(tab, sizeof(Bloco)*NUM_INICIAL_BLOCOS, 1,arq);
-
+	for(i = 0; i < NUM_INICIAL_BLOCOS; i++)
+	{
 		//EscreveBloco(arq, &(tab[i]), i);
-	//}
-	//free(tab);
+		fseek(arq, OFFSET_INDICE + i*sizeof(Bloco), SEEK_SET);
+		fwrite(&(tab[i]), sizeof(Bloco), 1,arq);
+	}
 }
 
 // Inicializa a tabela hash
@@ -64,7 +62,7 @@ void EscreveCabecalho()
 	fwrite(NUM_REGS_VALIDOS, sizeof(int), 1, fDados);
 }
 
-// Lê o cabeçalho do disco
+// Lê o cabeçalho do arquivo de dados
 void LeCabecalho()
 {
 	rewind(fDados);
@@ -81,7 +79,7 @@ void AbreArquivos()
 
 	// Tenta abrir o arquivo caso já exista
 	// Se não, cria novos arquivos para índice e um para dados
-	if( fopen(nomeDados, "r+b") == NULL)
+	if( (fDados = fopen(nomeDados, "r+b")) == NULL)
 	{
 		// Ponteiros para os arquivos
 		fDados = fopen(nomeDados, "w+b");
@@ -93,22 +91,38 @@ void AbreArquivos()
 		*NUM_REGS_VALIDOS = 0;
 
 		// Criando e inicializando a tabela hash
-		Bloco *TabHash = (Bloco *) malloc(sizeof(Bloco)*NUM_INICIAL_BLOCOS);
+		Bloco *TabHash = (Bloco *) calloc(NUM_INICIAL_BLOCOS, sizeof(Bloco));
+		if( !TabHash) 
+		{
+			printf("Erro! Memoria para TabHash nao alocada!\n");
+			exit(0);
+		}
+
 		InicializaTab(TabHash, TAM_BLOCO, NUM_INICIAL_BLOCOS);
 
 		// Escrevendo a tabela hash já inicializada nos arquivos de índice
 		EscreveTab(fIdent, TabHash);
 		EscreveTab(fMat, TabHash);
 
+		free(TabHash);
 		// Escrevendo o cabeçalho
-		//EscreveCabecalho();
+		EscreveCabecalho();
 	}
 	else 
 	{
+		// Abre os arquivos de índice
 		fIdent = fopen(nomeIdent, "r+b");
 		fMat = fopen(nomeMat, "r+b");
+		// Lê o cabeçalho para realizar as operações posteriores
 		LeCabecalho();
 	}
 }
 
-
+// Salva o cabeçalho e fecha os arquivos
+void Fecha()
+{
+	EscreveCabecalho();
+	fclose(fDados);
+	fclose(fIdent);
+	fclose(fMat);
+}
