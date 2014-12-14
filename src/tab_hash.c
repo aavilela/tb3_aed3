@@ -18,15 +18,20 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-char nomeIdent[] = "ArquivoAlunos_ID.dat";
-char nomeMat[] = "ArquivoAlunos_MAT.dat";
-
 // Escreve um bloco em um arquivo de índice 
-void EscreveBloco(FILE *arq, Bloco *B, int RRN_bloco)
+void EscreveBloco(FILE *fp, Bloco *B, int RRN_bloco)
 {
-	fseek(arq, OFFSET_INDICE + RRN_bloco*sizeof(Bloco), SEEK_SET);
-	fwrite(B, sizeof(Bloco), 1,arq);
+	fseek(fp, OFFSET_INDICE + RRN_bloco*sizeof(Bloco), SEEK_SET);
+	fwrite(B, sizeof(Bloco), 1,fp);
 	free(B);
+}
+
+Bloco *CarregaBloco(FILE* fp, int RRN_bloco)
+{
+	Bloco *B = (Bloco *) malloc(sizeof(Bloco));
+	fseek(fp, OFFSET_INDICE + RRN_bloco*sizeof(Bloco), SEEK_SET);
+	fread(B, sizeof(Bloco), 1, fp);
+	return B;
 }
 
 // Escreve a tabela inteira no arquivo
@@ -35,7 +40,6 @@ void EscreveTab(FILE *arq, Bloco *tab)
 	int i;
 	for(i = 0; i < NUM_INICIAL_BLOCOS; i++)
 	{
-		//EscreveBloco(arq, &(tab[i]), i);
 		fseek(arq, OFFSET_INDICE + i*sizeof(Bloco), SEEK_SET);
 		fwrite(&(tab[i]), sizeof(Bloco), 1,arq);
 	}
@@ -110,6 +114,7 @@ void AbreArquivos()
 	}
 	else 
 	{
+		printf("a\n");
 		// Abre os arquivos de índice
 		fIdent = fopen(nomeIdent, "r+b");
 		fMat = fopen(nomeMat, "r+b");
@@ -126,3 +131,37 @@ void Fecha()
 	fclose(fIdent);
 	fclose(fMat);
 }
+
+// Função hash que determina o bloco onde a chave possivelmente está
+int Hash(int chave)
+{
+	return chave % NUM_INICIAL_BLOCOS;
+}
+
+// Busca pelo bloco onde está a chave
+int BuscaBloco(FILE *fp, int chave)
+{
+	int RRN_bloco = Hash(chave);
+	int RRN_dBloco = -1;
+	Bloco *B = (Bloco *) malloc(sizeof(Bloco));
+
+	int sair = 0;
+	while(!sair)
+	{
+		B = CarregaBloco(fp, RRN_bloco);
+		int i;
+		for(i = 0; i < TAM_BLOCO; i++)
+		{
+			if(B->Itens[i].RRN_dados == -2)
+				RRN_dBloco = RRN_bloco;
+			if(B->Itens[i].RRN_dados == chave || B->Itens[i].RRN_dados == -1) 
+			{
+				sair = 1;
+				continue;
+			}
+			else 
+				RRN_bloco++;
+		}
+	}
+}
+

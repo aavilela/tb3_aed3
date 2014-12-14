@@ -32,7 +32,9 @@ FILE *fIdent;
 FILE *fMat; 
 
 // Nome do ArqDados que será recebido na linha de comando
-char *nomeDados; 
+char nomeDados[128]; 
+char nomeIdent[128];
+char nomeMat[128];
 
 // Cabeçalho do arquivo de dados
 int *NUM_REGS;
