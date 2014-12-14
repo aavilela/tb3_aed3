@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "tab_hash.h"
-#include "aluno.h"
 
 int main(int argc, char *argv[])
 {
@@ -54,22 +53,24 @@ int main(int argc, char *argv[])
 			scanf("%lf", &aluno->CRA);
 			
 			// Insere o aluno no arquivo de dados
-			//InsereAluno(aluno);
-			// Insere a matrícula do aluno no índice de matrícula
-			//InsereIndice(fMat, aluno->Matricula, *RRN_REGISTROS, RAIZ_MAT, RRN_PAGINAS_MAT);
-			// Insere a identeidade do aluno no índice de identeidade
-			//InsereIndice(fIdent, aluno->Identidade, *RRN_REGISTROS, RAIZ_IDENT, RRN_PAGINAS_IDENT);
+			Insere(aluno);
 			// Imprime resultado da operação ( FALHA OU SUCESSO)
-			//ImprimeResultado();
+			ImprimeResultado();
 		} // Operação Remover: remove um registro a partir de matrícula ou identidade
 		else if(!strcmp(opcao, "REM"))
 		{
 			scanf("%s", opcao);
+			int chave;
+			scanf("%d", &chave);
 			if(!strcmp(opcao, "ID"))
 			{
+				Remove(fIdent, fMat, chave);
+				ImprimeResultado();
 			}
 			else if (!strcmp(opcao, "MAT"))
 			{	
+				Remove(fMat, fIdent, chave);
+				ImprimeResultado();
 			}
 		}
 		// Operação Buscar: busca a chave na árvore especificada (ID para índice, MAT para matrícula)
@@ -79,13 +80,15 @@ int main(int argc, char *argv[])
 			scanf("%s", opcao);
 			if(!strcmp(opcao, "ID"))
 			{
-				// Busca a identidade no índice, se encontrado imprime em seguida
-				// Caso contrário imprime FALHA
+				int chave;
+				scanf("%d", &chave);
+				BuscaRegistro(fIdent, chave);
 			}
 			else if (!strcmp(opcao, "MAT"))
 			{	
-				// Busca a identidade no índice, se encontrado imprime em seguida
-				// Caso contrário imprime FALHA
+				int chave;
+				scanf("%d", &chave);
+				BuscaRegistro(fMat, chave);
 			}
 		}
 		// Operação Atualizar: atualiza os dados de um aluno especificado
@@ -105,13 +108,15 @@ int main(int argc, char *argv[])
 			scanf("%s", opcao);
 			if(!strcmp(opcao, "ID"))
 			{
-				// Imprime a árvore B com índices identidade
-				//ImprimeIndice(fIdent, *RAIZ_IDENT, 0);
+				ImprimeTab(fIdent);
 			}
-			else if (!strcmp(opcao, "MAT"))
+			else if(!strcmp(opcao, "MAT"))
 			{	
-				// Imprime a árvore B com índices matrícula
-				//ImprimeIndice(fMat, *RAIZ_MAT, 0);
+				ImprimeTab(fMat);
+			}
+			else if(!strcmp(opcao, "ALU"))
+			{
+				ImprimeTodosAlunos();
 			}
 		}
 		

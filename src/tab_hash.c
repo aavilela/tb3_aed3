@@ -17,6 +17,46 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+int RESULTADO = FALHA;
+
+int EscreveAluno(Aluno *aluno, int RRN_dados)
+{
+	fseek(fDados, OFFSET_DADOS + RRN_dados*sizeof(Aluno), SEEK_SET);
+	fwrite(aluno, sizeof(Aluno), 1, fDados);
+
+	// Verifica se houve erro ao escreve o aluno no arquivo de dados
+	if(ferror(fDados)) printf("Falha ao escrever aluno\n");
+
+	free(aluno);
+}
+
+Aluno *CarregaAluno(int RRN_dados)
+{
+	Aluno *aluno = (Aluno *) malloc(sizeof(Aluno));
+	rewind(fDados);
+	fseek(fDados, OFFSET_DADOS + RRN_dados*sizeof(Aluno), SEEK_SET);
+	fread(aluno, sizeof(Aluno), 1, fDados);
+	return aluno;
+}
+
+void ImprimeAluno(Aluno *A)
+{
+	printf("%s %s %s %s %.2lf\n", A->Nome, A->Identidade, A->CPF, A->Matricula, A->CRA);
+}
+
+void ImprimeTodosAlunos()
+{
+	int i;
+	Aluno *A;
+	for(i = 0; i < *NUM_REGS; i++)
+	{
+		A = CarregaAluno(i);
+		if(A->Nome[0] != '#')
+			ImprimeAluno(A);
+	}
+}
 
 // Escreve um bloco em um arquivo de índice 
 void EscreveBloco(FILE *fp, Bloco *B, int RRN_bloco)
@@ -91,12 +131,13 @@ void AbreArquivos()
 		fMat = fopen(nomeMat, "w+b");
 
 		// Inicializando as informações do cabeçalho
+		//
 		*NUM_REGS = 0;
 		*NUM_REGS_VALIDOS = 0;
 
 		// Criando e inicializando a tabela hash
 		Bloco *TabHash = (Bloco *) calloc(NUM_INICIAL_BLOCOS, sizeof(Bloco));
-		if( !TabHash) 
+		if(!TabHash) 
 		{
 			printf("Erro! Memoria para TabHash nao alocada!\n");
 			exit(0);
@@ -114,10 +155,10 @@ void AbreArquivos()
 	}
 	else 
 	{
-		printf("a\n");
 		// Abre os arquivos de índice
 		fIdent = fopen(nomeIdent, "r+b");
 		fMat = fopen(nomeMat, "r+b");
+		if(fIdent == NULL) printf("NULL\n");
 		// Lê o cabeçalho para realizar as operações posteriores
 		LeCabecalho();
 	}
@@ -139,29 +180,193 @@ int Hash(int chave)
 }
 
 // Busca pelo bloco onde está a chave
-int BuscaBloco(FILE *fp, int chave)
+int BuscaBloco(FILE *fp, int chave, int *dx)
 {
-	int RRN_bloco = Hash(chave);
-	int RRN_dBloco = -1;
+	int px = Hash(chave);
+	// Bloco que contem um registro deletado (-2)
+	if(dx != NULL) *dx = -1;	
 	Bloco *B = (Bloco *) malloc(sizeof(Bloco));
 
 	int sair = 0;
 	while(!sair)
 	{
-		B = CarregaBloco(fp, RRN_bloco);
+		B = CarregaBloco(fp, px);
+
+		// Procura dentro do bloco
 		int i;
 		for(i = 0; i < TAM_BLOCO; i++)
 		{
-			if(B->Itens[i].RRN_dados == -2)
-				RRN_dBloco = RRN_bloco;
+			if(B->Itens[i].RRN_dados == -2 && dx != NULL && *dx == -1)
+				*dx = px;
 			if(B->Itens[i].RRN_dados == chave || B->Itens[i].RRN_dados == -1) 
 			{
 				sair = 1;
-				continue;
+				return px;
 			}
-			else 
-				RRN_bloco++;
 		}
+		px++;
 	}
 }
 
+void BuscaRegistro(FILE *fp, int chave)
+{
+	
+	char str[20];
+	sprintf(str, "%d", chave);
+	printf("%s\n",str);
+
+	int px = BuscaBloco(fp, chave, NULL);
+	Bloco *B = CarregaBloco(fp, px);
+
+	int i;
+	for(i = 0; i < TAM_BLOCO - 1 && strcmp(B->Itens[i].chave, str) != 0; i++);
+
+	Aluno *A = CarregaAluno(B->Itens[i].RRN_dados);
+
+	ImprimeAluno(A);
+
+	free(A);
+}
+
+int Insere(Aluno *aluno)
+{
+	int dx;
+	// Convertendo a matricula para um int
+	int mat = strtol(aluno->Matricula, (char **)NULL, 10);
+	// índice do bloco em matrícula a chave possivelmente será inserida
+	int pxm = BuscaBloco(fMat, mat, &dx);
+	// Carregagando o bloco de matrícula de índice pxm
+
+	if(dx != -1) pxm = dx;
+	Bloco *bm = CarregaBloco(fMat, pxm);
+
+	// Verifica se a chave já foi inserida
+	int i;
+	for( i = 0; i < TAM_BLOCO; i++)
+	{
+		if(strcmp(bm->Itens[i].chave, aluno->Matricula) == 0)
+		{
+			RESULTADO = FALHA;
+		       	return;
+		}
+	}
+
+	// Convertendo a identidade para um int
+	int ident = strtol(aluno->Identidade, (char **)NULL, 10);
+	int pxi = BuscaBloco(fIdent, ident, &dx);
+
+	Bloco *bi = CarregaBloco(fIdent, pxi);
+	if(dx == -1) pxi = dx;
+
+	EscreveAluno(aluno, *NUM_REGS); 
+
+	// Procurando a posição a inserir
+	for(i = 0; i < TAM_BLOCO  && bm->Itens[i].RRN_dados != -1 && bm->Itens[i].RRN_dados != -2 ; i++);
+	strncpy(bm->Itens[i].chave, aluno->Matricula, sizeof(aluno->Matricula));
+	bm->Itens[i].RRN_dados = *NUM_REGS;
+	EscreveBloco(fMat, bm, pxm);
+
+	for(i = 0; i < TAM_BLOCO - 1 && bi->Itens[i].RRN_dados != -1 && bi->Itens[i].RRN_dados != -2; i++);
+	strncpy(bi->Itens[i].chave, aluno->Identidade, sizeof(aluno->Identidade));
+	bi->Itens[i].RRN_dados = *NUM_REGS;
+	EscreveBloco(fIdent, bi, pxi);
+
+	// Incrementando o número de registros
+	(*NUM_REGS)++;
+	RESULTADO = SUCESSO;
+}
+
+// fp1 é o arquivo que irá verificar primeiro se a
+// chave já foi adicionada, fp2 é o outro
+void Remove(FILE *fp1, FILE *fp2, int chave)
+{
+	char str[20];
+	sprintf(str, "%d", chave);
+	int dx;
+
+	int px1 = BuscaBloco(fp1, chave, &dx);
+
+	if(dx != -1) px1 = dx;
+
+	Bloco *b1 = CarregaBloco(fp1, px1); ;
+
+	int i;
+	
+	// Verifica se a chave está contida no bloco
+	// Flag para sinalizar que a chave foi achada
+	int achou = 0;
+	int RRN_dados;
+	
+	for(i = 0; i < TAM_BLOCO; i ++)
+	{
+		printf("chave: %s, b1->Itens[i].chave: %s\n", str, b1->Itens[i].chave);
+		printf("%d\n", strcmp(str, b1->Itens[i].chave));
+		if(!strcmp(str, b1->Itens[i].chave)) 
+		{
+			achou = 1;
+			RRN_dados = b1->Itens[i].RRN_dados;
+			b1->Itens[i].chave[0] = '#';
+			b1->Itens[i].RRN_dados = -2;
+		}
+	}
+
+	printf("achou: %d\n", achou);
+	if(!achou) 
+	{
+		RESULTADO = FALHA;
+		return;
+	}
+
+	Aluno *A = CarregaAluno(RRN_dados);
+	if(fp2 == fIdent) chave = strtol(A->Identidade, (char **)NULL, 10);
+	else if(fp1 == fMat) chave = strtol(A->Matricula, (char **)NULL, 10);
+
+	int px2 = BuscaBloco(fp2, chave, &dx);
+
+	if(dx != -1) px2 = dx;
+
+	Bloco *b2 = CarregaBloco(fp2, px2);
+	
+	for(i = 0; i < TAM_BLOCO; i ++)
+	{
+		if(!strcmp(str, b2->Itens[i].chave)) 
+		{
+			achou = 1;
+			RRN_dados = b2->Itens[i].RRN_dados;
+			b2->Itens[i].chave[0] = '#';
+			b2->Itens[i].RRN_dados = -2;
+		}
+	}
+
+	A->Nome[0] = '#';
+
+	EscreveAluno(A, RRN_dados);
+	EscreveBloco(fp1, b1, px1);
+	EscreveBloco(fp2, b2, px2);
+}
+
+void ImprimeTab(FILE *fp)
+{
+	int i, j;
+	Bloco *B;
+	for(i = 0; i < NUM_INICIAL_BLOCOS; i++)
+	{
+		B = CarregaBloco(fp, i);
+		
+		printf("[");
+		for(j = 0; j < TAM_BLOCO - 1; j++)
+		{
+			if(B->Itens[j].RRN_dados != -1 && B->Itens[j].RRN_dados != -2) printf("%s,", B->Itens[j].chave);
+			printf("%d|", B->Itens[j].RRN_dados);
+		}
+		if(B->Itens[j].RRN_dados != -1) printf("%s,", B->Itens[j].chave);
+		printf("%d]\n",  B->Itens[j].RRN_dados);
+		free(B);
+	}
+}
+
+void ImprimeResultado()
+{
+	if(RESULTADO == SUCESSO) printf("SUCESSO\n");
+	else printf("FALHA\n");
+}

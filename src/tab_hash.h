@@ -22,6 +22,10 @@
 #define NUM_INICIAL_BLOCOS 10
 
 #define OFFSET_INDICE 0
+#define OFFSET_DADOS sizeof(int)*2
+
+#define SUCESSO 1
+#define FALHA 2
 
 // Todos ponteiros do tipo FILE usam o prefixo 'f'
 // Ponteiro para o arquivo de dados
@@ -40,6 +44,9 @@ char nomeMat[128];
 int *NUM_REGS;
 int *NUM_REGS_VALIDOS;
 
+// Variavel utilizada para apresentar o resultado das operações
+int RESULTADO;
+
 // Tipo da chave
 typedef char Chave[15]; 
 
@@ -54,5 +61,15 @@ typedef struct Bloco
 {
 	Item Itens[TAM_BLOCO];
 } Bloco;
+
+// Estrutura Aluno
+typedef struct Aluno
+{
+	char Nome[15];
+	char Identidade[15];
+	char CPF[15];
+	char Matricula[15];
+	double CRA;
+} Aluno;
 
 #endif // TAB_HASH_H
