@@ -32,6 +32,9 @@ int main(int argc, char *argv[])
 
 	do
 	{
+		// Inicializa resultado como SUCESSO, se ocorrer algum erro este
+		// passa a valer FALHA
+		RESULTADO = SUCESSO;
 		// Lê a operação a ser executada
 		scanf("%s", opcao);
 
@@ -95,11 +98,31 @@ int main(int argc, char *argv[])
 		else if(!strcmp(opcao, "ATU"))
 		{
 			scanf("%s", opcao);
+			char entrada[128];
+
+			char chaveAntiga[128];
+			scanf("%s", chaveAntiga);
+
+			Aluno *aluno = malloc(sizeof(Aluno));
+			scanf("%s", entrada);
+			strcpy(aluno->Nome, entrada);
+			scanf("%s", entrada);
+			strcpy(aluno->Identidade, entrada);
+			scanf("%s", entrada);
+			strcpy(aluno->CPF, entrada);
+			scanf("%s", entrada);
+			strcpy(aluno->Matricula, entrada);
+			scanf("%lf", &aluno->CRA);
+
 			if(!strcmp(opcao, "ID"))
 			{
+				Atualizar(fIdent, fMat, chaveAntiga, aluno);
+				ImprimeResultado();
 			}
 			else if (!strcmp(opcao, "MAT"))
 			{	
+				Atualizar(fMat, fIdent, chaveAntiga, aluno);
+				ImprimeResultado();
 			}
 		}
 		//

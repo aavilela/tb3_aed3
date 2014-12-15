@@ -267,7 +267,6 @@ int Insere(Aluno *aluno)
 	// Procurando a posição a inserir
 	for(i = 0; i < TAM_BLOCO && bm->Itens[i].RRN_dados != -1 && bm->Itens[i].RRN_dados != -2 ; i++);
 	strncpy(bm->Itens[i].chave, aluno->Matricula, sizeof(aluno->Matricula));
-	printf("chave do bloco %s\n",bm->Itens[i].chave);
 	bm->Itens[i].RRN_dados = *NUM_REGS;
 	EscreveBloco(fMat, bm, pxm);
 
@@ -285,11 +284,12 @@ int Insere(Aluno *aluno)
 // chave já foi adicionada, fp2 é o outro
 void Remove(FILE *fp1, FILE *fp2, int chave)
 {
+	
+	int achou = 0;
 	char str[20];
 	sprintf(str, "%d", chave);
 
 	int px1 = BuscaBloco(fp1, chave, NULL);
-	printf("px1: %d\n", px1);
 
 	Bloco *b1 = CarregaBloco(fp1, px1); ;
 
@@ -297,31 +297,36 @@ void Remove(FILE *fp1, FILE *fp2, int chave)
 	
 	int i;
 	for(i = 0; i < TAM_BLOCO && strcmp(str, b1->Itens[i].chave); i ++);
-	printf("posicao no bloco: %d\n", i);
-	
 	
 	if(i < TAM_BLOCO)
 	{
+		achou = 1;
 		RRN_dados = b1->Itens[i].RRN_dados;
 		b1->Itens[i].chave[0] = '#';
 		b1->Itens[i].RRN_dados = -2;
+	}
+
+	if(!achou)
+	{
+		RESULTADO = FALHA;
+		return;
 	}
 	
 	Aluno *A = CarregaAluno(RRN_dados);
 	
 	if(fp2 == fIdent) chave = strtol(A->Identidade, (char **)NULL, 10);
-	else if(fp1 == fMat) chave = strtol(A->Matricula, (char **)NULL, 10);
+	else if(fp2 == fMat) chave = strtol(A->Matricula, (char **)NULL, 10);
 
 	int px2 = BuscaBloco(fp2, chave, NULL);
-	printf("px2: %d\n", px2);
 
 	Bloco *b2 = CarregaBloco(fp2, px2);
+
+	sprintf(str, "%d", chave);
 	
 	for(i = 0; i < TAM_BLOCO && strcmp(str, b2->Itens[i].chave); i ++);
 	
 	if(i < TAM_BLOCO)
 	{
-		RRN_dados = b2->Itens[i].RRN_dados;
 		b2->Itens[i].chave[0] = '#';
 		b2->Itens[i].RRN_dados = -2;
 	}
@@ -331,6 +336,14 @@ void Remove(FILE *fp1, FILE *fp2, int chave)
 	EscreveAluno(A, RRN_dados);
 	EscreveBloco(fp1, b1, px1);
 	EscreveBloco(fp2, b2, px2);
+}
+
+void Atualizar(FILE *fp1, FILE *fp2, char *strChave, Aluno *A)
+{
+	int chave = strtol(strChave, (char **)NULL, 10);
+
+	Remove(fp1, fp2, chave);
+	Insere(A);
 }
 
 void ImprimeTab(FILE *fp)
