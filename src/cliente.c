@@ -12,7 +12,7 @@
  * IDE: Nenhuma
  * Sistema Operacional Ubuntu 14.04 LTS
  */
-
+//
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,6 +22,7 @@
 int main(int argc, char *argv[])
 {
 	// Concatenando os nomes dos arquivos 
+	strtok(argv[1], ".");
 	snprintf(nomeDados, sizeof(nomeDados), "%s%s", argv[1], ".dat");
 	snprintf(nomeIdent, sizeof(nomeIdent), "%s%s", argv[1], "_ID.dat");
 	snprintf(nomeMat, sizeof(nomeMat), "%s%s", argv[1], "_MAT.dat");
