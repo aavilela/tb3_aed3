@@ -255,18 +255,18 @@ int Insere(Aluno *aluno)
 	int ident = strtol(aluno->Identidade, (char **)NULL, 10);
 	int pxi = BuscaBloco(fIdent, ident, &dx);
 
+	if(dx != -1) pxi = dx;
 	Bloco *bi = CarregaBloco(fIdent, pxi);
-	if(dx == -1) pxi = dx;
 
 	EscreveAluno(aluno, *NUM_REGS); 
 
 	// Procurando a posição a inserir
-	for(i = 0; i < TAM_BLOCO  && bm->Itens[i].RRN_dados != -1 && bm->Itens[i].RRN_dados != -2 ; i++);
+	for(i = 0; i < TAM_BLOCO && bm->Itens[i].RRN_dados != -1 && bm->Itens[i].RRN_dados != -2 ; i++);
 	strncpy(bm->Itens[i].chave, aluno->Matricula, sizeof(aluno->Matricula));
 	bm->Itens[i].RRN_dados = *NUM_REGS;
 	EscreveBloco(fMat, bm, pxm);
 
-	for(i = 0; i < TAM_BLOCO - 1 && bi->Itens[i].RRN_dados != -1 && bi->Itens[i].RRN_dados != -2; i++);
+	for(i = 0; i < TAM_BLOCO && bi->Itens[i].RRN_dados != -1 && bi->Itens[i].RRN_dados != -2; i++);
 	strncpy(bi->Itens[i].chave, aluno->Identidade, sizeof(aluno->Identidade));
 	bi->Itens[i].RRN_dados = *NUM_REGS;
 	EscreveBloco(fIdent, bi, pxi);
