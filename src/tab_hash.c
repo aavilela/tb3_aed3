@@ -13,6 +13,7 @@
  * Sistema Operacional Ubuntu 14.04 LTS
  */
 
+#include "aluno.h"
 #include "tab_hash.h"
 
 #include <stdio.h>
@@ -21,44 +22,7 @@
 
 int RESULTADO = FALHA;
 
-int EscreveAluno(Aluno *aluno, int RRN_dados)
-{
-	fseek(fDados, OFFSET_DADOS + RRN_dados*sizeof(Aluno), SEEK_SET);
-	fwrite(aluno, sizeof(Aluno), 1, fDados);
-
-	// Verifica se houve erro ao escreve o aluno no arquivo de dados
-	if(ferror(fDados)) printf("Falha ao escrever aluno\n");
-
-	free(aluno);
-}
-
-Aluno *CarregaAluno(int RRN_dados)
-{
-	Aluno *aluno = (Aluno *) malloc(sizeof(Aluno));
-	rewind(fDados);
-	fseek(fDados, OFFSET_DADOS + RRN_dados*sizeof(Aluno), SEEK_SET);
-	fread(aluno, sizeof(Aluno), 1, fDados);
-	return aluno;
-}
-
-void ImprimeAluno(Aluno *A)
-{
-	printf("%s %s %s %s %.2lf\n", A->Nome, A->Identidade, A->CPF, A->Matricula, A->CRA);
-}
-
-void ImprimeTodosAlunos()
-{
-	int i;
-	Aluno *A;
-	for(i = 0; i < *NUM_REGS; i++)
-	{
-		A = CarregaAluno(i);
-		if(A->Nome[0] != '#')
-			ImprimeAluno(A);
-	}
-}
-
-// Escreve um bloco em um arquivo de índice 
+// Escreve um bloco em um arquivo 'fp' de índice 
 void EscreveBloco(FILE *fp, Bloco *B, int RRN_bloco)
 {
 	fseek(fp, OFFSET_INDICE + RRN_bloco*sizeof(Bloco), SEEK_SET);
@@ -66,6 +30,7 @@ void EscreveBloco(FILE *fp, Bloco *B, int RRN_bloco)
 	free(B);
 }
 
+// Carrega um bloco do arquivo de índice 'fp'
 Bloco *CarregaBloco(FILE* fp, int RRN_bloco)
 {
 	Bloco *B = (Bloco *) malloc(sizeof(Bloco));
@@ -182,13 +147,18 @@ int Hash(int chave)
 // Busca pelo bloco onde está a chave
 int BuscaBloco(FILE *fp, int chave, int *dx)
 {
+	// Bloco que contem a chave
 	int px = Hash(chave);
 	// Bloco que contem um registro deletado (-2)
 	if(dx != NULL) *dx = -1;	
+
 	Bloco *B = (Bloco *) malloc(sizeof(Bloco));
+
 	char str[32];
+	// Convertendo a chave de int para string
 	sprintf(str, "%d", chave);
 
+	// Condição de parada
 	int sair = 0;
 	while(!sair)
 	{
@@ -198,20 +168,25 @@ int BuscaBloco(FILE *fp, int chave, int *dx)
 		int i;
 		for(i = 0; i < TAM_BLOCO; i++)
 		{
+			// Verifica se dada elemento já foi excluído
 			if(B->Itens[i].RRN_dados == -2 && dx != NULL && *dx == -1)
 			{
 				*dx = px;
 			}
+			// Verifica se a chave se encontra da em determinada posição
 			if(!strcmp(B->Itens[i].chave, str) || B->Itens[i].RRN_dados == -1) 
 			{
+				// Valida a condição de parada
 				sair = 1;
 				return px;
 			}
 		}
+		// Incrementa 'px' para procurar no próximo bloco
 		px++;
 	}
 }
 
+// Busca um registro de Aluno no arquivo de dados
 void BuscaRegistro(FILE *fp, int chave)
 {
 	
@@ -232,6 +207,7 @@ void BuscaRegistro(FILE *fp, int chave)
 	free(A);
 }
 
+// Insere um Aluno no sistema
 int Insere(Aluno *aluno)
 {
 	int dx;
@@ -266,10 +242,15 @@ int Insere(Aluno *aluno)
 
 	// Procurando a posição a inserir
 	for(i = 0; i < TAM_BLOCO && bm->Itens[i].RRN_dados != -1 && bm->Itens[i].RRN_dados != -2 ; i++);
+
+	// Copiando a matrícula do aluno para o bloco contido no índice de matrícula
 	strncpy(bm->Itens[i].chave, aluno->Matricula, sizeof(aluno->Matricula));
+	// Setando o arquivo o RRN para o arquivo daquela nova chave 
 	bm->Itens[i].RRN_dados = *NUM_REGS;
+	// Escrevebdo o bloco no índice de matrícula
 	EscreveBloco(fMat, bm, pxm);
 
+	// Vide operações acima
 	for(i = 0; i < TAM_BLOCO && bi->Itens[i].RRN_dados != -1 && bi->Itens[i].RRN_dados != -2; i++);
 	strncpy(bi->Itens[i].chave, aluno->Identidade, sizeof(aluno->Identidade));
 	bi->Itens[i].RRN_dados = *NUM_REGS;
@@ -277,6 +258,7 @@ int Insere(Aluno *aluno)
 
 	// Incrementando o número de registros
 	(*NUM_REGS)++;
+	// Setando o resultado da operação para sucesso
 	RESULTADO = SUCESSO;
 }
 
@@ -284,7 +266,7 @@ int Insere(Aluno *aluno)
 // chave já foi adicionada, fp2 é o outro
 void Remove(FILE *fp1, FILE *fp2, int chave)
 {
-	
+	// Flag para indicar se foi encontrado ou nao a chave
 	int achou = 0;
 	char str[20];
 	sprintf(str, "%d", chave);
@@ -293,30 +275,39 @@ void Remove(FILE *fp1, FILE *fp2, int chave)
 
 	Bloco *b1 = CarregaBloco(fp1, px1); ;
 
+	// Variável auxiliar para armazenar o valor do RRN do aluno que 
+	// será excluído
 	int RRN_dados;
 	
 	int i;
 	for(i = 0; i < TAM_BLOCO && strcmp(str, b1->Itens[i].chave); i ++);
 	
+	// Se i for menor que o tamanho do bloco a chave foi encontrada
 	if(i < TAM_BLOCO)
 	{
+		// Setando a flag achou
 		achou = 1;
 		RRN_dados = b1->Itens[i].RRN_dados;
+		// Excluindo a chave do índice
 		b1->Itens[i].chave[0] = '#';
 		b1->Itens[i].RRN_dados = -2;
 	}
 
 	if(!achou)
 	{
+		// Se não achou então ocorreu uma falha na remoção
 		RESULTADO = FALHA;
 		return;
 	}
 	
-	Aluno *A = CarregaAluno(RRN_dados);
+	Aluno *A = (Aluno *)CarregaAluno(RRN_dados);
 	
+	// Definindo qual arquivo de índice foi aberto primeiro para checar
+	// se o aluno estava no sistema
 	if(fp2 == fIdent) chave = strtol(A->Identidade, (char **)NULL, 10);
 	else if(fp2 == fMat) chave = strtol(A->Matricula, (char **)NULL, 10);
 
+	// Excluindo o elemento no segundo arquivo de índice
 	int px2 = BuscaBloco(fp2, chave, NULL);
 
 	Bloco *b2 = CarregaBloco(fp2, px2);
@@ -331,13 +322,16 @@ void Remove(FILE *fp1, FILE *fp2, int chave)
 		b2->Itens[i].RRN_dados = -2;
 	}
 
+	// Excluindo Aluno do sistema
 	A->Nome[0] = '#';
 
+	// Escrevendo alterações no disco
 	EscreveAluno(A, RRN_dados);
 	EscreveBloco(fp1, b1, px1);
 	EscreveBloco(fp2, b2, px2);
 }
 
+// Atualiza o registro de um aluno no sistema
 void Atualizar(FILE *fp1, FILE *fp2, char *strChave, Aluno *A)
 {
 	int chave = strtol(strChave, (char **)NULL, 10);
@@ -346,6 +340,7 @@ void Atualizar(FILE *fp1, FILE *fp2, char *strChave, Aluno *A)
 	Insere(A);
 }
 
+// Imprime a tabela hash de do arquivo fp
 void ImprimeTab(FILE *fp)
 {
 	int i, j;
@@ -366,7 +361,8 @@ void ImprimeTab(FILE *fp)
 	}
 }
 
+// Imprime resultado da operação
 void ImprimeResultado()
 {
-	if(RESULTADO == SUCESSO) printf("SUCESSO\n"); else printf("FALHA\n");
+	RESULTADO == SUCESSO ? printf("SUCESSO\n") : printf("FALHA\n");
 }

@@ -12,11 +12,12 @@
  * IDE: Nenhuma
  * Sistema Operacional Ubuntu 14.04 LTS
  */
-//
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "aluno.h"
 #include "tab_hash.h"
 
 int main(int argc, char *argv[])

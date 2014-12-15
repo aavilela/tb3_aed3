@@ -15,6 +15,8 @@
 
 #include <stdio.h>
 
+#include "aluno.h"
+
 #ifndef TAB_HASH_H
 #define TAB_HASH_H
 
@@ -35,7 +37,7 @@ FILE *fIdent;
 // Ponteiro para o arquivo de índice de matrícula
 FILE *fMat; 
 
-// Nome do ArqDados que será recebido na linha de comando
+// Strings que receberam o nome dos arquivos fornecidos
 char nomeDados[128]; 
 char nomeIdent[128];
 char nomeMat[128];
@@ -54,22 +56,38 @@ typedef char Chave[15];
 typedef struct Item
 {
 	Chave chave;
+	// RRN para o arquivo de dados
 	int RRN_dados;
 } Item;
 
+// Bloco da tabela hash
 typedef struct Bloco
 {
 	Item Itens[TAM_BLOCO];
 } Bloco;
 
-// Estrutura Aluno
-typedef struct Aluno
-{
-	char Nome[15];
-	char Identidade[15];
-	char CPF[15];
-	char Matricula[15];
-	double CRA;
-} Aluno;
+// Protótipos
+// Está contida no arquivo de implementação uma
+// descrição mais detalhada de cada função
+void EscreveBloco(FILE*, Bloco*, int);
+Bloco *CarregaBloco(FILE*, int);
+
+void EscreveTab(FILE*, Bloco*);
+void InicializaTab(Bloco*, int, int);
+
+void EscreveCabecalho();
+void LeCabecalho();
+
+void AbreArquivos();
+void Fecha();
+
+int Hash(int);
+int BuscaBloco(FILE*, int, int*);
+void BuscaRegistro(FILE*, int);
+int Insere(Aluno*);
+void Remove(FILE*, FILE*, int);
+void Atualizar(FILE*, FILE*, char*, Aluno*);
+void ImprimeTab(FILE*);
+void ImprimeResultado();
 
 #endif // TAB_HASH_H
