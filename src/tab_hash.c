@@ -186,6 +186,8 @@ int BuscaBloco(FILE *fp, int chave, int *dx)
 	// Bloco que contem um registro deletado (-2)
 	if(dx != NULL) *dx = -1;	
 	Bloco *B = (Bloco *) malloc(sizeof(Bloco));
+	char str[32];
+	sprintf(str, "%d", chave);
 
 	int sair = 0;
 	while(!sair)
@@ -197,8 +199,10 @@ int BuscaBloco(FILE *fp, int chave, int *dx)
 		for(i = 0; i < TAM_BLOCO; i++)
 		{
 			if(B->Itens[i].RRN_dados == -2 && dx != NULL && *dx == -1)
+			{
 				*dx = px;
-			if(B->Itens[i].RRN_dados == chave || B->Itens[i].RRN_dados == -1) 
+			}
+			if(!strcmp(B->Itens[i].chave, str) || B->Itens[i].RRN_dados == -1) 
 			{
 				sair = 1;
 				return px;
@@ -263,6 +267,7 @@ int Insere(Aluno *aluno)
 	// Procurando a posição a inserir
 	for(i = 0; i < TAM_BLOCO && bm->Itens[i].RRN_dados != -1 && bm->Itens[i].RRN_dados != -2 ; i++);
 	strncpy(bm->Itens[i].chave, aluno->Matricula, sizeof(aluno->Matricula));
+	printf("chave do bloco %s\n",bm->Itens[i].chave);
 	bm->Itens[i].RRN_dados = *NUM_REGS;
 	EscreveBloco(fMat, bm, pxm);
 
@@ -282,60 +287,43 @@ void Remove(FILE *fp1, FILE *fp2, int chave)
 {
 	char str[20];
 	sprintf(str, "%d", chave);
-	int dx;
 
-	int px1 = BuscaBloco(fp1, chave, &dx);
-
-	if(dx != -1) px1 = dx;
+	int px1 = BuscaBloco(fp1, chave, NULL);
+	printf("px1: %d\n", px1);
 
 	Bloco *b1 = CarregaBloco(fp1, px1); ;
 
-	int i;
-	
-	// Verifica se a chave está contida no bloco
-	// Flag para sinalizar que a chave foi achada
-	int achou = 0;
 	int RRN_dados;
 	
-	for(i = 0; i < TAM_BLOCO; i ++)
+	int i;
+	for(i = 0; i < TAM_BLOCO && strcmp(str, b1->Itens[i].chave); i ++);
+	printf("posicao no bloco: %d\n", i);
+	
+	
+	if(i < TAM_BLOCO)
 	{
-		printf("chave: %s, b1->Itens[i].chave: %s\n", str, b1->Itens[i].chave);
-		printf("%d\n", strcmp(str, b1->Itens[i].chave));
-		if(!strcmp(str, b1->Itens[i].chave)) 
-		{
-			achou = 1;
-			RRN_dados = b1->Itens[i].RRN_dados;
-			b1->Itens[i].chave[0] = '#';
-			b1->Itens[i].RRN_dados = -2;
-		}
+		RRN_dados = b1->Itens[i].RRN_dados;
+		b1->Itens[i].chave[0] = '#';
+		b1->Itens[i].RRN_dados = -2;
 	}
-
-	printf("achou: %d\n", achou);
-	if(!achou) 
-	{
-		RESULTADO = FALHA;
-		return;
-	}
-
+	
 	Aluno *A = CarregaAluno(RRN_dados);
+	
 	if(fp2 == fIdent) chave = strtol(A->Identidade, (char **)NULL, 10);
 	else if(fp1 == fMat) chave = strtol(A->Matricula, (char **)NULL, 10);
 
-	int px2 = BuscaBloco(fp2, chave, &dx);
-
-	if(dx != -1) px2 = dx;
+	int px2 = BuscaBloco(fp2, chave, NULL);
+	printf("px2: %d\n", px2);
 
 	Bloco *b2 = CarregaBloco(fp2, px2);
 	
-	for(i = 0; i < TAM_BLOCO; i ++)
+	for(i = 0; i < TAM_BLOCO && strcmp(str, b2->Itens[i].chave); i ++);
+	
+	if(i < TAM_BLOCO)
 	{
-		if(!strcmp(str, b2->Itens[i].chave)) 
-		{
-			achou = 1;
-			RRN_dados = b2->Itens[i].RRN_dados;
-			b2->Itens[i].chave[0] = '#';
-			b2->Itens[i].RRN_dados = -2;
-		}
+		RRN_dados = b2->Itens[i].RRN_dados;
+		b2->Itens[i].chave[0] = '#';
+		b2->Itens[i].RRN_dados = -2;
 	}
 
 	A->Nome[0] = '#';
@@ -354,19 +342,18 @@ void ImprimeTab(FILE *fp)
 		B = CarregaBloco(fp, i);
 		
 		printf("[");
-		for(j = 0; j < TAM_BLOCO - 1; j++)
+		for(j = 0; j < TAM_BLOCO ; j++)
 		{
 			if(B->Itens[j].RRN_dados != -1 && B->Itens[j].RRN_dados != -2) printf("%s,", B->Itens[j].chave);
-			printf("%d|", B->Itens[j].RRN_dados);
+			printf("%d", B->Itens[j].RRN_dados);
+			if(j != TAM_BLOCO - 1) printf("|");
 		}
-		if(B->Itens[j].RRN_dados != -1) printf("%s,", B->Itens[j].chave);
-		printf("%d]\n",  B->Itens[j].RRN_dados);
+		printf("]\n");
 		free(B);
 	}
 }
 
 void ImprimeResultado()
 {
-	if(RESULTADO == SUCESSO) printf("SUCESSO\n");
-	else printf("FALHA\n");
+	if(RESULTADO == SUCESSO) printf("SUCESSO\n"); else printf("FALHA\n");
 }
